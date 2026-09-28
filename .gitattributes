@@ -1,0 +1,14 @@
+# Auto-detect text files and perform LF normalization on checkout
+* text=auto
+
+# Enforce Unix LF line endings for scripts and configurations to avoid \r errors on Linux VPS
+*.sh text eol=lf
+*.bash text eol=lf
+Dockerfile text eol=lf
+Caddyfile text eol=lf
+*.sql text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
