@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CrossPaste — Требуется ключ доступа</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <script src="/scripts/theme.js"></script>
+  <link rel="stylesheet" href="/styles/main.css" />
+</head>
+<body class="access-body">
+  <main class="access-card">
+    <h1>CrossPaste</h1>
+    <p>Для доступа к общему буферу обмена введите ключ доступа.</p>
+    <form id="access-form" novalidate>
+      <label for="access-token">Ключ доступа</label>
+      <input type="password" id="access-token" name="token" autocomplete="off" required />
+      <button type="submit" class="button">Войти</button>
+    </form>
+    <p id="access-error" class="inline-message inline-message--error" hidden role="alert"></p>
+  </main>
+  <script type="module" src="/scripts/access.js"></script>
+</body>
+</html>

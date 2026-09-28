@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>CrossPaste</title>
+  <meta name="description" content="Общий буфер обмена для быстрой передачи текста, кода, фотографий и файлов между вашими устройствами." />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <script src="/scripts/theme.js"></script>
+  <link rel="stylesheet" href="/styles/main.css" />
+</head>
+<body>
+  <a class="skip-link" href="#editor-container">Перейти к тексту</a>
+
+  <header class="app-header">
+    <div class="app-header__identity">
+      <span class="app-header__logo" aria-hidden="true">CP</span>
+      <h1 class="app-header__title">CrossPaste</h1>
+    </div>
+
+    <div class="app-header__status" role="status" aria-live="polite" id="status-region">
+      <span class="status-pill" id="connection-status" data-state="connecting">
+        <span class="status-pill__dot" aria-hidden="true"></span>
+        <span id="connection-status-text">Подключение…</span>
+      </span>
+      <span class="status-pill" id="save-status" data-state="idle">
+        <span class="status-pill__dot" aria-hidden="true"></span>
+        <span id="save-status-text">Загрузка…</span>
+      </span>
+      <span class="app-header__updated" id="last-updated">Обновлено: —</span>
+    </div>
+
+    <div class="header-controls">
+      <div class="theme-control">
+        <button type="button" class="theme-toggle-btn" id="theme-toggle" aria-label="Переключить тему оформления" title="Переключить тему">
+          <span class="theme-toggle-text" id="theme-toggle-text">Тёмная</span>
+        </button>
+      </div>
+
+      <div class="font-controls" role="group" aria-label="Масштаб текста">
+        <button type="button" id="font-decrease" class="font-button" title="Уменьшить масштаб текста" aria-label="Уменьшить масштаб">A−</button>
+        <output id="font-size" class="font-size-output" aria-live="polite">100%</output>
+        <button type="button" id="font-increase" class="font-button" title="Увеличить масштаб текста" aria-label="Увеличить масштаб">A+</button>
+      </div>
+
+      <button type="button" class="button button--ghost" id="refresh-button" title="Обновить данные с сервера">
+        Обновить
+      </button>
+    </div>
+  </header>
+
+  <nav class="app-nav" role="tablist" aria-label="Разделы приложения">
+    <div class="app-nav__container">
+      <button type="button" class="app-nav-tab is-active" id="nav-tab-clipboard" role="tab" aria-selected="true" data-view="clipboard">
+        <span class="app-nav-tab__label">Буфер обмена</span>
+      </button>
+      <button type="button" class="app-nav-tab" id="nav-tab-history" role="tab" aria-selected="false" data-view="history">
+        <span class="app-nav-tab__label">История</span>
+        <span class="app-nav-badge" id="nav-history-badge">0</span>
+      </button>
+      <button type="button" class="app-nav-tab" id="nav-tab-commands" role="tab" aria-selected="false" data-view="commands">
+        <span class="app-nav-tab__label">Команды и скрипты</span>
+        <span class="app-nav-badge" id="nav-commands-badge">0</span>
+      </button>
+    </div>
+  </nav>
+
+  <main class="app-main">
+    <!-- View 1: Main Clipboard Workspace -->
+    <div id="view-clipboard" class="workspace-view is-active">
+      <div class="workspace">
+        <section class="panel text-panel" aria-labelledby="text-panel-heading">
+          <h2 class="visually-hidden" id="text-panel-heading">Общий текст</h2>
+
+          <div class="toolbar" role="toolbar" aria-label="Панель инструментов текста">
+            <button type="button" class="toolbar-button" data-action="paste-text" title="Вставить из буфера обмена" aria-label="Вставить текст">
+              <span class="toolbar-button__label">Вставить</span>
+            </button>
+            <button type="button" class="toolbar-button" data-action="copy-text" title="Скопировать весь текст" aria-label="Скопировать текст">
+              <span class="toolbar-button__label">Копировать</span>
+            </button>
+            <button type="button" class="toolbar-button toolbar-button--danger" data-action="clear-text" title="Очистить общий текст" aria-label="Очистить текст">
+              <span class="toolbar-button__label">Очистить</span>
+            </button>
+
+            <div id="formatting-toolbar" class="formatting-toolbar">
+              <span class="toolbar-separator" role="separator" aria-orientation="vertical"></span>
+
+              <button type="button" class="toolbar-button" data-command="bold" title="Жирный (Ctrl+B)" aria-label="Жирный">
+                <strong aria-hidden="true">B</strong>
+              </button>
+              <button type="button" class="toolbar-button" data-command="italic" title="Курсив (Ctrl+I)" aria-label="Курсив">
+                <em aria-hidden="true">I</em>
+              </button>
+              <button type="button" class="toolbar-button" data-command="underline" title="Подчёркнутый (Ctrl+U)" aria-label="Подчёркнутый">
+                <span aria-hidden="true" style="text-decoration: underline;">U</span>
+              </button>
+              <button type="button" class="toolbar-button" data-command="strikeThrough" title="Зачёркнутый" aria-label="Зачёркнутый">
+                <span aria-hidden="true" style="text-decoration: line-through;">S</span>
+              </button>
+
+              <span class="toolbar-separator" role="separator" aria-orientation="vertical"></span>
+
+              <button type="button" class="toolbar-button" data-command="heading" title="Заголовок" aria-label="Заголовок">
+                <span aria-hidden="true">H</span>
+              </button>
+              <button type="button" class="toolbar-button" data-command="insertOrderedList" title="Нумерованный список" aria-label="Нумерованный список">
+                <span aria-hidden="true">1.</span>
+              </button>
+              <button type="button" class="toolbar-button" data-command="insertUnorderedList" title="Маркированный список" aria-label="Маркированный список">
+                <span aria-hidden="true">•</span>
+              </button>
+              <button type="button" class="toolbar-button" data-command="createLink" title="Вставить ссылку" aria-label="Вставить ссылку">
+                <span aria-hidden="true" style="font-size: 11px; font-weight: 700;">Link</span>
+              </button>
+              <button type="button" class="toolbar-button" data-command="code" title="Вставить блок кода" aria-label="Блок кода">
+                <span aria-hidden="true">&lt;/&gt;</span>
+              </button>
+              <button type="button" class="toolbar-button" data-command="removeFormat" title="Очистить форматирование" aria-label="Очистить форматирование">
+                <span aria-hidden="true">Tx</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="paste-fallback-message" class="inline-message" hidden role="note"></div>
+          <div id="copy-fallback-message" class="inline-message" hidden role="note"></div>
+
+      <div id="editor-container" class="editor-container"></div>
+
+      <div class="editor-footer">
+        <span id="char-counter" class="char-counter">0 символов</span>
+        <div id="limit-warning" class="inline-message inline-message--warning" hidden role="alert"></div>
+      </div>
+    </section>
+
+    <div class="workspace-divider" role="separator" aria-orientation="vertical"></div>
+
+    <div class="media-column">
+      <section class="panel image-panel" aria-labelledby="image-panel-heading">
+        <div class="panel-header">
+          <h2 class="panel-heading" id="image-panel-heading">Фотографии</h2>
+          <span id="image-count-status" class="panel-count-status">Фото: 0</span>
+        </div>
+
+        <div class="toolbar toolbar--wrap" role="toolbar" aria-label="Действия с фотографиями">
+          <button type="button" class="toolbar-button" id="paste-image-button" title="Вставить фото из буфера" aria-label="Вставить фото">
+            <span class="toolbar-button__label">Вставить фото</span>
+          </button>
+          <label class="toolbar-button toolbar-button--file" for="image-file-input">
+            <span class="toolbar-button__label">Загрузить фото</span>
+          </label>
+          <input type="file" multiple id="image-file-input" accept="image/png,image/jpeg,image/webp,image/gif" hidden aria-label="Выберите фотографии" />
+          <button type="button" class="toolbar-button" id="copy-image-button" title="Скопировать выбранное фото" aria-label="Скопировать выбранное фото" disabled>
+            <span class="toolbar-button__label">Копировать</span>
+          </button>
+          <button type="button" class="toolbar-button" id="download-image-button" title="Скачать выбранное фото" aria-label="Скачать выбранное фото" disabled>
+            <span class="toolbar-button__label">Скачать</span>
+          </button>
+          <button type="button" class="toolbar-button toolbar-button--danger" id="delete-image-button" title="Удалить выбранное фото" aria-label="Удалить выбранное фото" disabled>
+            <span class="toolbar-button__label">Удалить</span>
+          </button>
+        </div>
+
+        <div id="image-limit-message" class="inline-message inline-message--warning" hidden role="alert"></div>
+        <div id="image-error-message" class="inline-message inline-message--error" hidden role="alert"></div>
+
+        <div id="image-dropzone" class="image-dropzone">
+          <ul id="image-grid" class="image-grid" aria-label="Список фотографий"></ul>
+          <p id="image-empty-state" class="image-empty-state">Перетащите фотографии сюда или нажмите «Загрузить фото».</p>
+        </div>
+      </section>
+
+      <section class="panel file-panel" aria-labelledby="file-panel-heading">
+        <div class="panel-header">
+          <h2 class="panel-heading" id="file-panel-heading">Файлы</h2>
+          <span id="file-count-status" class="panel-count-status">Файлы: 0</span>
+        </div>
+
+        <div class="toolbar toolbar--wrap" role="toolbar" aria-label="Действия с файлами">
+          <label class="toolbar-button toolbar-button--file" for="file-file-input">
+            <span class="toolbar-button__label">Загрузить файлы</span>
+          </label>
+          <input type="file" multiple id="file-file-input" hidden aria-label="Выберите файлы" />
+          <button type="button" class="toolbar-button" id="download-file-button" title="Скачать выбранный файл" aria-label="Скачать выбранный файл" disabled>
+            <span class="toolbar-button__label">Скачать</span>
+          </button>
+          <button type="button" class="toolbar-button toolbar-button--danger" id="delete-file-button" title="Удалить выбранный файл" aria-label="Удалить выбранный файл" disabled>
+            <span class="toolbar-button__label">Удалить</span>
+          </button>
+        </div>
+
+        <div id="file-limit-message" class="inline-message inline-message--warning" hidden role="alert"></div>
+        <div id="file-error-message" class="inline-message inline-message--error" hidden role="alert"></div>
+
+        <div id="file-dropzone" class="image-dropzone">
+          <ul id="file-list" class="file-grid" aria-label="Список файлов"></ul>
+          <p id="file-empty-state" class="file-empty-state">Перетащите файлы сюда или нажмите «Загрузить файлы».</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</div><!-- /view-clipboard -->
+
+  <!-- View 2: Dedicated Spacious History -->
+  <div id="view-history" class="workspace-view" hidden>
+    <div class="dedicated-container">
+      <div class="dedicated-header">
+        <div class="dedicated-header__left">
+          <h2 class="dedicated-title">История изменений буфера</h2>
+          <span class="dedicated-count" id="history-total-count">0 сохранений</span>
+        </div>
+        <div class="dedicated-header__center">
+          <input type="text" id="history-search-input" class="dedicated-search-input" placeholder="Поиск по сохранённому тексту или коду…" aria-label="Поиск по истории" />
+        </div>
+        <div class="dedicated-header__right">
+          <button type="button" class="button button--ghost" id="history-clear-all-btn">
+            Очистить историю
+          </button>
+        </div>
+      </div>
+
+      <div class="dedicated-body">
+        <div id="history-cards-list" class="cards-list cards-list--spacious"></div>
+        <div id="history-empty-state" class="dedicated-empty-state" hidden>
+          История пуста. Изменения текста сохраняются автоматически при работе в редакторе.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- View 3: Dedicated Spacious Commands & Scripts Library -->
+  <div id="view-commands" class="workspace-view" hidden>
+    <div class="dedicated-container">
+      <div class="dedicated-header">
+        <div class="dedicated-header__left">
+          <h2 class="dedicated-title">Библиотека команд и скриптов</h2>
+          <span class="dedicated-count" id="commands-total-count">14 команд</span>
+        </div>
+        <div class="dedicated-header__center">
+          <input type="text" id="commands-search-input" class="dedicated-search-input" placeholder="Поиск по названию, коду или тегам…" aria-label="Поиск по командам" />
+        </div>
+        <div class="dedicated-header__right">
+          <button type="button" class="button" id="commands-add-btn">
+            + Своя команда
+          </button>
+        </div>
+      </div>
+
+      <div class="dedicated-categories-bar" id="commands-cat-bar">
+        <button type="button" class="filter-chip is-active" data-cat="all">Все</button>
+        <button type="button" class="filter-chip" data-cat="PowerShell">PowerShell</button>
+        <button type="button" class="filter-chip" data-cat="Linux">Linux</button>
+        <button type="button" class="filter-chip" data-cat="Docker">Docker</button>
+        <button type="button" class="filter-chip" data-cat="Сеть">Сеть</button>
+        <button type="button" class="filter-chip" data-cat="Git">Git</button>
+        <button type="button" class="filter-chip" data-cat="custom">Мои команды</button>
+      </div>
+
+      <!-- Add Custom Command Form -->
+      <div id="command-add-dialog" class="command-add-dialog" hidden>
+        <div class="command-add-dialog__header">
+          <div class="command-add-dialog__title-group">
+            <h3 class="command-add-dialog__title" id="cmd-dialog-heading">Новая команда или скрипт</h3>
+            <span class="command-add-dialog__subtitle" id="cmd-dialog-subtitle">Добавьте часто используемую команду или сниппет для быстрого копирования</span>
+          </div>
+          <button type="button" class="command-add-dialog__close" id="cmd-new-close-btn" aria-label="Закрыть форму" title="Закрыть">✕</button>
+        </div>
+
+        <div class="command-form-grid">
+          <div class="command-form-field command-form-field--title">
+            <label for="cmd-new-title" class="command-form-label">Название</label>
+            <input type="text" id="cmd-new-title" class="command-form-input" placeholder="Например: Удаление предустановленных приложений UWP" maxlength="120" />
+          </div>
+          <div class="command-form-field command-form-field--category">
+            <label for="cmd-new-category" class="command-form-label">Категория</label>
+            <div class="command-select-wrapper">
+              <select id="cmd-new-category" class="command-form-select">
+                <option value="PowerShell">PowerShell</option>
+                <option value="Linux">Linux</option>
+                <option value="Docker">Docker</option>
+                <option value="Сеть">Сеть</option>
+                <option value="Git">Git</option>
+                <option value="Мои команды" selected>Мои команды</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="command-form-field">
+          <div class="command-form-label-row">
+            <label for="cmd-new-code" class="command-form-label">Команда или код скрипта</label>
+            <span class="command-form-lang-hint" id="cmd-new-lang-hint">КОД</span>
+          </div>
+          <div class="command-code-editor-wrapper">
+            <pre class="command-code-editor-box"><code id="cmd-new-code" class="hljs hljs-highlighted" contenteditable="true" spellcheck="false" data-placeholder="Вставьте команду, например: git fetch origin &amp;&amp; git reset --hard origin/main"></code></pre>
+          </div>
+        </div>
+
+        <div class="command-form-actions">
+          <button type="button" class="button" id="cmd-new-save-btn">Сохранить команду</button>
+          <button type="button" class="button button--ghost" id="cmd-new-cancel-btn">Отмена</button>
+        </div>
+      </div>
+
+      <div class="dedicated-body">
+        <div id="commands-cards-list" class="cards-list cards-list--spacious"></div>
+        <div id="commands-empty-state" class="dedicated-empty-state" hidden>
+          Команды не найдены.
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+  <!-- Modal Backdrop (placed at root level for global overlay) -->
+  <div id="modal-backdrop" class="modal-backdrop" hidden></div>
+
+  <!-- Dialog Panels (all direct children of body to avoid stacking context & blur bugs) -->
+  <div id="conflict-panel" class="conflict-panel" hidden role="alertdialog" aria-labelledby="conflict-title" aria-describedby="conflict-description">
+    <h3 id="conflict-title">Текст изменён на другом устройстве</h3>
+    <p id="conflict-description">
+      Пока вы редактировали текст, на сервере появилась новая версия. Выберите действие:
+    </p>
+    <div class="conflict-panel__actions">
+      <button type="button" class="button" id="conflict-keep-local">Сохранить мою версию</button>
+      <button type="button" class="button button--secondary" id="conflict-load-server">Загрузить с сервера</button>
+      <button type="button" class="button button--ghost" id="conflict-copy-local">Скопировать мою версию</button>
+    </div>
+  </div>
+
+  <div id="recovery-panel" class="conflict-panel" hidden role="alertdialog" aria-labelledby="recovery-title" aria-describedby="recovery-description">
+    <h3 id="recovery-title">Восстановить несохранённый текст?</h3>
+    <p id="recovery-description">
+      В этом браузере остался текст, сохранение которого не было завершено перед закрытием страницы.
+    </p>
+    <div class="conflict-panel__actions">
+      <button type="button" class="button" id="recovery-restore">Восстановить</button>
+      <button type="button" class="button button--ghost" id="recovery-discard">Отбросить</button>
+    </div>
+  </div>
+
+  <div id="delete-image-panel" class="conflict-panel" hidden role="alertdialog" aria-labelledby="delete-image-title">
+    <h3 id="delete-image-title">Удалить фотографию?</h3>
+    <p>Фотография будет безвозвратно удалена на всех устройствах.</p>
+    <div class="conflict-panel__actions">
+      <button type="button" class="button button--danger" id="delete-image-confirm">Удалить</button>
+      <button type="button" class="button button--ghost" id="delete-image-cancel">Отмена</button>
+    </div>
+  </div>
+
+  <div id="delete-file-panel" class="conflict-panel" hidden role="alertdialog" aria-labelledby="delete-file-title">
+    <h3 id="delete-file-title">Удалить файл?</h3>
+    <p>Будет удалён <span id="delete-file-name">этот файл</span> на всех устройствах.</p>
+    <div class="conflict-panel__actions">
+      <button type="button" class="button button--danger" id="delete-file-confirm">Удалить</button>
+      <button type="button" class="button button--ghost" id="delete-file-cancel">Отмена</button>
+    </div>
+  </div>
+
+  <div id="clear-text-panel" class="conflict-panel" hidden role="alertdialog" aria-labelledby="clear-text-title">
+    <h3 id="clear-text-title">Очистить общий текст?</h3>
+    <p>Текст будет очищен на всех подключённых устройствах. Это действие нельзя отменить.</p>
+    <div class="conflict-panel__actions">
+      <button type="button" class="button button--danger" id="clear-text-confirm">Очистить</button>
+      <button type="button" class="button button--ghost" id="clear-text-cancel">Отмена</button>
+    </div>
+  </div>
+
+  <dialog id="image-viewer" class="image-viewer" aria-labelledby="image-viewer-title">
+    <div class="viewer-header">
+      <h2 id="image-viewer-title">Просмотр изображения</h2>
+      <button type="button" class="button button--ghost" id="image-viewer-close" aria-label="Закрыть просмотр">Закрыть</button>
+    </div>
+    <p id="image-viewer-hint" class="viewer-hint">
+      Для копирования на телефоне удерживайте фото пальцем и выберите «Копировать изображение».
+    </p>
+    <div class="viewer-body">
+      <img id="image-viewer-photo" alt="Изображение для копирования" />
+    </div>
+    <div class="viewer-footer">
+      <a id="image-viewer-download" class="button" download>Скачать оригинал</a>
+    </div>
+  </dialog>
+
+  <div id="selection-copy-bubble" class="selection-copy-bubble" hidden>
+    <button type="button" id="selection-copy-btn" class="selection-copy-btn" title="Скопировать выделенный фрагмент" aria-label="Скопировать">
+      <span class="copy-text">Скопировать</span>
+    </button>
+    <span class="selection-bubble-separator" role="separator" aria-orientation="vertical"></span>
+    <button type="button" id="selection-code-btn" class="selection-copy-btn" title="Сделать выделенный текст кодом (Ctrl+E)" aria-label="Сделать кодом">
+      <span class="code-text">&lt;/&gt; Код</span>
+    </button>
+  </div>
+
+  <!-- Fullscreen Drag and Drop Overlay -->
+  <div id="fullscreen-drag-overlay" class="fullscreen-drag-overlay" hidden aria-hidden="true">
+    <div class="fullscreen-drag-modal">
+      <div class="fullscreen-drag-icon">📥</div>
+      <div class="fullscreen-drag-title">Перетащите файлы сюда</div>
+      <div class="fullscreen-drag-subtitle">Фотографии попадут в галерею, остальные файлы — в хранилище файлов</div>
+      <div class="fullscreen-drag-zones">
+        <div class="fullscreen-drag-zone">
+          <span>🖼️</span> <span>Фотографии</span>
+        </div>
+        <div class="fullscreen-drag-zone">
+          <span>📁</span> <span>Любые файлы</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="announcer" class="visually-hidden" role="status" aria-live="polite"></div>
+
+  <script src="/scripts/highlight.min.js"></script>
+  <script type="module" src="/scripts/app.js"></script>
+</body>
+</html>
